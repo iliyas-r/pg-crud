@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>CRUD Users</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+<body>
+  <h1>Пользователи</h1>
+
+ 
+
+  <div id="form-block">
+    <h2>Добавить пользователя</h2>
+    <input id="first_name" placeholder="Имя">
+    <input id="last_name" placeholder="Фамилия">
+    <input id="email" placeholder="Email">
+    <button id="add-btn">Добавить</button>
+  </div>
+
+ <div id="search-block">
+    <input id="search-input" placeholder="Поиск по имени, фамилии, email...">
+    <button id="search-btn">Найти</button>
+    <button id="reset-btn">Сбросить</button>
+  </div>
+
+  <table id="users-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Имя</th>
+        <th>Фамилия</th>
+        <th>Email</th>
+        <th>Действия</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script src="/script.js"></script>
+</body>
+</html>
