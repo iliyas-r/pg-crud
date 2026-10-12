@@ -1,3 +1,6 @@
+let searchTimeout = null;
+let editingId = null;
+
 async function loadUsers(search = '') {
   let url = '/users';
   if (search) {
@@ -12,64 +15,61 @@ async function loadUsers(search = '') {
 
   users.forEach(user => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${user.id}</td>
-      <td>${user.first_name}</td>
-      <td>${user.last_name}</td>
-      <td>${user.email}</td>
-      <td>
-        <button onclick="editUser(${user.id})">Редактировать</button>
-        <button onclick="deleteUser(${user.id})">Удалить</button>
-      </td>
-    `;
+    tr.id = `row-${user.id}`;
+    renderRow(tr, user);
     tbody.appendChild(tr);
   });
 }
 
-loadUsers();
-
-async function deleteUser(id) {
-  if (!confirm("Удалить пользователя?")) return;
-
-  await fetch(`/users/${id}`, { method: "DELETE" });
-
-  loadUsers();
+function renderRow(tr, user) {
+  tr.innerHTML = `
+    <td>${user.id}</td>
+    <td>${user.first_name}</td>
+    <td>${user.last_name}</td>
+    <td>${user.email}</td>
+    <td>
+      <button class="btn-edit" onclick="startEdit(${user.id})">Редактировать</button>
+      <button class="btn-delete" onclick="deleteUser(${user.id})">Удалить</button>
+    </td>
+  `;
 }
 
-async function addUser() {
-  const first_name = document.querySelector("#first_name").value;
-  const last_name = document.querySelector("#last_name").value;
-  const email = document.querySelector("#email").value;
+function renderEditRow(tr, user) {
+  tr.innerHTML = `
+    <td>${user.id}</td>
+    <td><input id="edit-first_name-${user.id}" value="${user.first_name}"></td>
+    <td><input id="edit-last_name-${user.id}" value="${user.last_name}"></td>
+    <td><input id="edit-email-${user.id}" value="${user.email}"></td>
+    <td>
+      <button class="btn-save" onclick="saveEdit(${user.id})">Сохранить</button>
+      <button class="btn-cancel" onclick="cancelEdit(${user.id})">Отмена</button>
+    </td>
+  `;
+}
 
-  if (!first_name || !last_name || !email) {
-    alert("Заполни все поля");
-    return;
+async function startEdit(id) {
+  if (editingId !== null) {
+    await cancelEdit(editingId);
   }
 
-  await fetch("/users", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ first_name, last_name, email }),
-  });
+  editingId = id;
 
-  document.querySelector("#first_name").value = "";
-  document.querySelector("#last_name").value = "";
-  document.querySelector("#email").value = "";
-
-  loadUsers();
-}
-
-document.querySelector("#add-btn").addEventListener("click", addUser);
-
-async function editUser(id) {
   const response = await fetch(`/users/${id}`);
   const user = await response.json();
 
-  const first_name = prompt('Имя:', user.first_name);
-  const last_name = prompt('Фамилия:', user.last_name);
-  const email = prompt('Email:', user.email);
+  const tr = document.querySelector(`#row-${id}`);
+  renderEditRow(tr, user);
+}
 
-  if (!first_name || !last_name || !email) return;
+async function saveEdit(id) {
+  const first_name = document.querySelector(`#edit-first_name-${id}`).value;
+  const last_name = document.querySelector(`#edit-last_name-${id}`).value;
+  const email = document.querySelector(`#edit-email-${id}`).value;
+
+  if (!first_name || !last_name || !email) {
+    alert('Заполни все поля');
+    return;
+  }
 
   await fetch(`/users/${id}`, {
     method: 'PATCH',
@@ -77,15 +77,58 @@ async function editUser(id) {
     body: JSON.stringify({ first_name, last_name, email })
   });
 
-  loadUsers();
+  editingId = null;
+  loadUsers(document.querySelector('#search-input').value);
 }
 
-document.querySelector('#search-btn').addEventListener('click', () => {
-  const search = document.querySelector('#search-input').value;
-  loadUsers(search);
+async function cancelEdit(id) {
+  editingId = null;
+
+  const response = await fetch(`/users/${id}`);
+  const user = await response.json();
+
+  const tr = document.querySelector(`#row-${id}`);
+  renderRow(tr, user);
+}
+
+async function deleteUser(id) {
+  if (!confirm('Удалить пользователя?')) return;
+
+  await fetch(`/users/${id}`, { method: 'DELETE' });
+  loadUsers(document.querySelector('#search-input').value);
+}
+
+async function addUser() {
+  const first_name = document.querySelector('#first_name').value;
+  const last_name = document.querySelector('#last_name').value;
+  const email = document.querySelector('#email').value;
+
+  if (!first_name || !last_name || !email) {
+    alert('Заполни все поля');
+    return;
+  }
+
+  await fetch('/users', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ first_name, last_name, email })
+  });
+
+  document.querySelector('#first_name').value = '';
+  document.querySelector('#last_name').value = '';
+  document.querySelector('#email').value = '';
+
+  loadUsers(document.querySelector('#search-input').value);
+}
+
+document.querySelector('#add-btn').addEventListener('click', addUser);
+
+document.querySelector('#search-input').addEventListener('input', (event) => {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    loadUsers(event.target.value);
+  }, 300);
 });
 
-document.querySelector('#reset-btn').addEventListener('click', () => {
-  document.querySelector('#search-input').value = '';
-  loadUsers();
-});
+loadUsers();
+
