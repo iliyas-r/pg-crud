@@ -1,13 +1,20 @@
 {
   "name": "pg-crud",
   "version": "1.0.0",
-  "description": "",
+  "description": "REST API на Express + PostgreSQL: CRUD пользователей, регистрация, вход по JWT",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js",
+    "test": "node tests/api.test.js"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "express",
+    "postgresql",
+    "jwt",
+    "rest-api",
+    "crud"
+  ],
+  "author": "Ниязов Ильяс",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
