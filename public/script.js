@@ -1,3 +1,7 @@
+if (!localStorage.getItem('token')) {
+  window.location.href = '/login.html';
+}
+
 let searchTimeout = null;
 let editingId = null;
 
@@ -67,7 +71,7 @@ async function saveEdit(id) {
   const email = document.querySelector(`#edit-email-${id}`).value;
 
   if (!first_name || !last_name || !email) {
-    alert('Заполни все поля');
+    showToast('Заполни все поля', 'error');
     return;
   }
 
@@ -104,7 +108,7 @@ async function addUser() {
   const email = document.querySelector('#email').value;
 
   if (!first_name || !last_name || !email) {
-    alert('Заполни все поля');
+    showToast('Заполни все поля', 'error');
     return;
   }
 
@@ -121,7 +125,13 @@ async function addUser() {
   loadUsers(document.querySelector('#search-input').value);
 }
 
+function logout() {
+  localStorage.removeItem('token');
+  window.location.href = '/login.html';
+}
+
 document.querySelector('#add-btn').addEventListener('click', addUser);
+document.querySelector('#logout-btn').addEventListener('click', logout);
 
 document.querySelector('#search-input').addEventListener('input', (event) => {
   clearTimeout(searchTimeout);
@@ -131,4 +141,3 @@ document.querySelector('#search-input').addEventListener('input', (event) => {
 });
 
 loadUsers();
-

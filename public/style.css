@@ -1,122 +1,400 @@
+/* ====== БАЗА ====== */
+* {
+  box-sizing: border-box;
+}
+
 body {
-  font-family: Arial, sans-serif;
-  max-width: 900px;
-  margin: 20px auto;
-  padding: 20px;
-  background: #f5f5f5;
+  font-family: 'Orbitron', Arial, sans-serif;
+  background: #000;
+  color: #ffe81f;
+  margin: 0;
+  padding: 40px 20px;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  cursor: url('/lightsaber.png') 0 32, auto;
 }
 
+button,
+a,
+input,
+label {
+  cursor: url('/lightsaber.png') 0 32, auto;
+}
+
+/* ====== ЗВЁЗДНОЕ НЕБО ====== */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(3px 3px at 20px 30px, #fff, transparent),
+    radial-gradient(3px 3px at 40px 70px, #fff, transparent),
+    radial-gradient(2px 2px at 90px 40px, #fff, transparent),
+    radial-gradient(2px 2px at 130px 80px, #fff, transparent),
+    radial-gradient(3px 3px at 160px 120px, #fff, transparent),
+    radial-gradient(2px 2px at 200px 50px, #fff, transparent),
+    radial-gradient(2px 2px at 250px 150px, #fff, transparent),
+    radial-gradient(3px 3px at 300px 90px, #fff, transparent),
+    radial-gradient(2px 2px at 350px 180px, #fff, transparent),
+    radial-gradient(3px 3px at 400px 60px, #fff, transparent),
+    radial-gradient(2px 2px at 450px 140px, #fff, transparent),
+    radial-gradient(3px 3px at 500px 100px, #fff, transparent),
+    radial-gradient(2px 2px at 550px 170px, #fff, transparent);
+  background-repeat: repeat;
+  background-size: 600px 200px;
+  animation: stars 100s linear infinite;
+  z-index: -1;
+  opacity: 1;
+}
+
+@keyframes stars {
+  from { background-position: 0 0; }
+  to { background-position: -6000px 2000px; }
+}
+
+/* ====== ЗАГОЛОВКИ ====== */
 h1 {
-  color: #333;
+  font-size: 2.5em;
+  font-weight: 900;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  text-align: center;
+  color: #ffe81f;
+  text-shadow:
+    0 0 10px #ffe81f,
+    0 0 20px #ffe81f,
+    0 0 40px #ffa500;
+  margin-bottom: 40px;
 }
 
+h2 {
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #ffe81f;
+  text-shadow: 0 0 10px #ffe81f;
+}
+
+/* ====== ССЫЛКИ ====== */
+a {
+  color: #00d4ff;
+  text-decoration: none;
+  text-shadow: 0 0 8px #00d4ff;
+  transition: text-shadow 0.3s;
+}
+
+a:hover {
+  text-shadow: 0 0 16px #00d4ff, 0 0 32px #00d4ff;
+}
+
+/* ====== КНОПКИ ====== */
 button {
-  padding: 8px 16px;
-  background: #007bff;
-  color: white;
-  border: none;
+  font-family: 'Orbitron', Arial, sans-serif;
+  padding: 10px 20px;
+  background: transparent;
+  color: #ffe81f;
+  border: 2px solid #ffe81f;
   border-radius: 4px;
   cursor: pointer;
-  margin-right: 5px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: all 0.3s;
+  margin-right: 8px;
+  box-shadow: 0 0 10px rgba(255, 232, 31, 0.3);
 }
 
 button:hover {
-  background: #0056b3;
+  background: #ffe81f;
+  color: #000;
+  box-shadow: 0 0 20px #ffe81f, 0 0 40px #ffe81f;
+  transform: translateY(-2px);
 }
 
-#search-block {
-  background: white;
-  padding: 20px;
+/* ====== ИНПУТЫ ====== */
+input {
+  font-family: 'Orbitron', Arial, sans-serif;
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #ffe81f;
+  border: 2px solid #ffe81f;
+  border-radius: 4px;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.3s;
+}
+
+input::placeholder {
+  color: rgba(255, 232, 31, 0.4);
+}
+
+input:focus {
+  box-shadow: 0 0 15px #ffe81f, inset 0 0 10px rgba(255, 232, 31, 0.2);
+}
+
+label {
+  display: block;
+  margin: 15px 0 6px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #ffe81f;
+  text-shadow: 0 0 6px rgba(255, 232, 31, 0.6);
+}
+
+/* ====== БЛОКИ ФОРМ ====== */
+#search-block,
+#form-block,
+form {
+  background: rgba(0, 0, 0, 0.7);
+  border: 2px solid #ffe81f;
   border-radius: 8px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  padding: 25px;
+  margin-bottom: 25px;
+  box-shadow:
+    0 0 20px rgba(255, 232, 31, 0.3),
+    inset 0 0 20px rgba(255, 232, 31, 0.05);
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ====== ГОЛОГРАММНЫЙ ЭФФЕКТ ====== */
+#search-block::before,
+#form-block::before,
+form::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 232, 31, 0.15),
+    transparent
+  );
+  animation: scan 4s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes scan {
+  from { left: -100%; }
+  to { left: 100%; }
 }
 
 #search-block input {
   width: 100%;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box;
-}
-
-#form-block {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 #form-block input {
-  padding: 8px;
-  margin-right: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  margin-right: 8px;
+  margin-bottom: 8px;
 }
 
+/* ====== ТАБЛИЦА ====== */
 table {
   width: 100%;
-  background: white;
+  background: rgba(0, 0, 0, 0.7);
+  border: 2px solid #ffe81f;
   border-collapse: collapse;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 0 20px rgba(255, 232, 31, 0.3);
 }
 
 th, td {
-  padding: 12px;
+  padding: 14px;
   text-align: left;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid rgba(255, 232, 31, 0.3);
+  color: #ffe81f;
 }
 
 th {
-  background: #007bff;
-  color: white;
+  background: rgba(255, 232, 31, 0.1);
+  color: #ffe81f;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 700;
+  text-shadow: 0 0 8px #ffe81f;
 }
 
-tr:hover {
-  background: #f9f9f9;
+tr:hover td {
+  background: rgba(255, 232, 31, 0.05);
 }
 
-/* Поля ввода внутри ячеек при редактировании */
 td input {
-  padding: 6px;
-  border: 1px solid #007bff;
-  border-radius: 4px;
   width: 100%;
-  box-sizing: border-box;
+  padding: 6px 8px;
+  font-size: 13px;
 }
 
+/* ====== КНОПКИ В ТАБЛИЦЕ ====== */
 .btn-edit {
-  background: #ffc107;
-  color: #333;
+  border-color: #00d4ff;
+  color: #00d4ff;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
 }
 
 .btn-edit:hover {
-  background: #e0a800;
+  background: #00d4ff;
+  color: #000;
+  box-shadow: 0 0 20px #00d4ff, 0 0 40px #00d4ff;
 }
 
 .btn-delete {
-  background: #dc3545;
+  border-color: #ff2a2a;
+  color: #ff2a2a;
+  box-shadow: 0 0 10px rgba(255, 42, 42, 0.3);
 }
 
 .btn-delete:hover {
-  background: #c82333;
+  background: #ff2a2a;
+  color: #000;
+  box-shadow: 0 0 20px #ff2a2a, 0 0 40px #ff2a2a;
 }
 
 .btn-save {
-  background: #28a745;
+  border-color: #00ff88;
+  color: #00ff88;
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
 }
 
 .btn-save:hover {
-  background: #218838;
+  background: #00ff88;
+  color: #000;
+  box-shadow: 0 0 20px #00ff88, 0 0 40px #00ff88;
 }
 
 .btn-cancel {
-  background: #6c757d;
+  border-color: #888;
+  color: #888;
 }
 
 .btn-cancel:hover {
-  background: #5a6268;
+  background: #888;
+  color: #000;
+}
+
+/* ====== СКРЫТИЕ ====== */
+.hidden {
+  display: none !important;
+}
+
+/* ====== СТРАНИЦЫ LOGIN / REGISTER ====== */
+form button[type="submit"] {
+  display: block;
+  width: 100%;
+  margin-top: 25px;
+  margin-right: 0;
+  font-size: 16px;
+}
+
+body > p {
+  text-align: center;
+  margin-top: 20px;
+  color: #ffe81f;
+}
+
+/* ====== КНОПКА ВЫХОДА ====== */
+#logout-btn {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 100;
+  padding: 10px 20px;
+}
+
+/* ====== ПЛАНЕТА НА ФОНЕ ====== */
+body::after {
+  content: '';
+  position: fixed;
+  top: 15%;
+  right: 5%;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #a060e0, #4a2a7a 40%, #1a0a2a 70%, #000);
+  box-shadow:
+    inset -40px -40px 80px rgba(0,0,0,0.9),
+    inset 25px 25px 60px rgba(180, 120, 255, 0.5),
+    0 0 100px rgba(180, 120, 255, 0.8),
+    0 0 200px rgba(120, 60, 200, 0.5);
+  z-index: -2;
+  animation: floatPlanet 15s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes floatPlanet {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-30px); }
+}
+
+/* ====== TOAST УВЕДОМЛЕНИЯ ====== */
+#toast-container {
+  position: fixed;
+  top: 30px;
+  right: 30px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.toast {
+  font-family: 'Orbitron', Arial, sans-serif;
+  padding: 16px 24px;
+  border-radius: 6px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-size: 14px;
+  min-width: 250px;
+  max-width: 400px;
+  background: rgba(0, 0, 0, 0.9);
+  animation: slideIn 0.3s ease-out;
+  box-shadow: 0 0 20px;
+}
+
+.toast.success {
+  border: 2px solid #00ff88;
+  color: #00ff88;
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.6);
+}
+
+.toast.error {
+  border: 2px solid #ff2a2a;
+  color: #ff2a2a;
+  box-shadow: 0 0 20px rgba(255, 42, 42, 0.6);
+}
+
+.toast.hiding {
+  animation: slideOut 0.3s ease-in forwards;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
 }

@@ -1,3 +1,7 @@
+if (localStorage.getItem('token')) {
+  window.location.href = '/';
+}
+
 const form = document.querySelector('#register-form');
 
 form.addEventListener('submit', async (event) => {
@@ -13,10 +17,12 @@ form.addEventListener('submit', async (event) => {
   });
 
   if (response.ok) {
-    alert('Регистрация успешна!');
-    window.location.href = '/';
+    showToast('Регистрация успешна!', 'success');
+    setTimeout(() => {
+      window.location.href = '/login.html';
+    }, 1000);
   } else {
     const error = await response.json();
-    alert('Ошибка: ' + error.error);
+    showToast(error.error, 'error');
   }
 });

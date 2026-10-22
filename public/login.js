@@ -1,3 +1,7 @@
+if (localStorage.getItem('token')) {
+  window.location.href = '/';
+}
+
 const form = document.querySelector('#login-form');
 
 form.addEventListener('submit', async (event) => {
@@ -15,10 +19,9 @@ form.addEventListener('submit', async (event) => {
   if (response.ok) {
     const result = await response.json();
     localStorage.setItem('token', result.token);
-    alert('Вход успешен!');
     window.location.href = '/';
   } else {
     const error = await response.json();
-    alert('Ошибка: ' + error.error);
+    showToast(error.error, 'error');
   }
 });

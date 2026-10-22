@@ -1,13 +1,20 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <title>CRUD Users</title>
-    <link rel="stylesheet" href="/style.css" />
-  </head>
+<head>
+  <meta charset="UTF-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+  <title>CRUD Users</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
 <body>
+  <div id="toast-container"></div>
+
+  <button id="logout-btn">Выйти</button>
+
   <h1>Пользователи</h1>
-  
+
   <div id="search-block">
     <input id="search-input" placeholder="Поиск по имени, фамилии, email...">
   </div>
@@ -33,6 +40,7 @@
     <tbody></tbody>
   </table>
 
+  <script src="/toast.js"></script>
   <script src="/script.js"></script>
 </body>
 </html>
