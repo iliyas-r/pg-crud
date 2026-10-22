@@ -1,81 +1,224 @@
 require('dotenv').config();
 
-const express = require("express");
-
-const pool = require("./db");
-
+const express = require('express');
 const bcrypt = require('bcryptjs');
-
 const jwt = require('jsonwebtoken');
+
+const pool = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Поля пользователя, которые можно отдавать наружу. password_hash сюда не входит.
+const PUBLIC_FIELDS = 'id, first_name, last_name, email, created_at';
+
+// Поля, которые разрешено менять через PATCH/PUT.
+const EDITABLE_FIELDS = ['first_name', 'last_name', 'email'];
+
 app.use(express.json());
+app.use(express.static('public'));
 
-app.use(express.static("public"));
+// ---------------------------------------------------------------------------
+// Авторизация: проверка JWT из заголовка Authorization: Bearer <token>
+// ---------------------------------------------------------------------------
+function auth(req, res, next) {
+  const header = req.headers.authorization || '';
+  const token = header.startsWith('Bearer ') ? header.slice(7).trim() : null;
 
-app.get("/", (req, res) => {
-  res.send("Сервер работает!");
-});
-
-app.get('/users', (req, res) => {
-  const { search } = req.query;
-
-  let sql = 'SELECT id, first_name, last_name, email FROM public.users1';
-  let values = [];
-
-  if (search) {
-    sql += ' WHERE first_name ILIKE $1 OR last_name ILIKE $1 OR email ILIKE $1';
-    values.push(`%${search}%`);
+  if (!token) {
+    return res.status(401).json({ error: 'Требуется токен авторизации' });
   }
 
-  sql += ' ORDER BY id';
+  try {
+    req.user = jwt.verify(token, process.env.JWT_SECRET);
+    return next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Токен недействителен или истёк' });
+  }
+}
 
-  pool.query(sql, values)
-    .then(result => {
-      res.json(result.rows);
-    })
-    .catch(err => {
-      res.status(500).json({ error: err.message });
-    });
+// ---------------------------------------------------------------------------
+// Валидация
+// ---------------------------------------------------------------------------
+function validateUser(body) {
+  const errors = [];
+  const firstName = (body.first_name || '').trim();
+  const lastName = (body.last_name || '').trim();
+  const email = (body.email || '').trim();
+
+  if (!firstName) errors.push('first_name обязателен');
+  if (!lastName) errors.push('last_name обязателен');
+  if (!email) errors.push('email обязателен');
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push('email некорректен');
+
+  return errors;
+}
+
+// ---------------------------------------------------------------------------
+// Служебное
+// ---------------------------------------------------------------------------
+app.get('/', (req, res) => {
+  res.send('Сервер работает!');
 });
 
-app.get("/users/:id", (req, res) => {
-  const { id } = req.params;
+// Все маршруты ниже требуют валидный JWT
+app.use('/users', auth);
 
-  pool
-    .query(
-      "SELECT id, first_name, last_name, email FROM public.users1 WHERE id = $1",
-      [id],
-    )
-    .then((result) => {
-      if (result.rowCount === 0) {
-        return res.status(404).json({ error: "Пользователь не найден" });
-      }
-      res.json(result.rows[0]);
-    })
-    .catch((err) => {
-      res.status(500).json({ error: err.message });
-    });
+// ---------------------------------------------------------------------------
+// CRUD
+// ---------------------------------------------------------------------------
+app.get('/users', async (req, res) => {
+  try {
+    const { search } = req.query;
+
+    let sql = `SELECT ${PUBLIC_FIELDS} FROM public.users`;
+    const values = [];
+
+    if (search) {
+      sql += ' WHERE first_name ILIKE $1 OR last_name ILIKE $1 OR email ILIKE $1';
+      values.push(`%${search}%`);
+    }
+
+    sql += ' ORDER BY id';
+
+    const result = await pool.query(sql, values);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-app.post("/users", (req, res) => {
+app.get('/users/:id', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT ${PUBLIC_FIELDS} FROM public.users WHERE id = $1`,
+      [req.params.id],
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/users', async (req, res) => {
+  const errors = validateUser(req.body);
+
+  if (errors.length > 0) {
+    return res.status(400).json({ error: 'Некорректные данные', details: errors });
+  }
+
+  const { first_name, last_name, email, password } = req.body;
+
+  try {
+    const passwordHash = password ? await bcrypt.hash(password, 10) : null;
+
+    const result = await pool.query(
+      `INSERT INTO public.users (first_name, last_name, email, password_hash)
+       VALUES ($1, $2, $3, $4)
+       RETURNING ${PUBLIC_FIELDS}`,
+      [first_name.trim(), last_name.trim(), email.trim(), passwordHash],
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'Email уже занят' });
+    }
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/users/:id', async (req, res) => {
+  const errors = validateUser(req.body);
+
+  if (errors.length > 0) {
+    return res.status(400).json({ error: 'Некорректные данные', details: errors });
+  }
+
   const { first_name, last_name, email } = req.body;
 
-  pool
-    .query(
-      "INSERT INTO public.users1 (first_name, last_name, email) VALUES ($1, $2, $3) RETURNING *",
-      [first_name, last_name, email],
-    )
-    .then((result) => {
-      res.status(201).json(result.rows[0]);
-    })
-    .catch((err) => {
-      res.status(500).json({ error: err.message });
-    });
+  try {
+    const result = await pool.query(
+      `UPDATE public.users
+          SET first_name = $1, last_name = $2, email = $3
+        WHERE id = $4
+        RETURNING ${PUBLIC_FIELDS}`,
+      [first_name.trim(), last_name.trim(), email.trim(), req.params.id],
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'Email уже занят' });
+    }
+    res.status(500).json({ error: err.message });
+  }
 });
 
+app.patch('/users/:id', async (req, res) => {
+  // Собираем SET только из белого списка — нельзя обновить произвольную колонку из тела запроса
+  const keys = Object.keys(req.body).filter((key) => EDITABLE_FIELDS.includes(key));
+
+  if (keys.length === 0) {
+    return res.status(400).json({ error: 'Нет полей для обновления' });
+  }
+
+  if ('email' in req.body && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(req.body.email || '')) {
+    return res.status(400).json({ error: 'email некорректен' });
+  }
+
+  const setClause = keys.map((key, i) => `${key} = $${i + 1}`).join(', ');
+  const values = keys.map((key) => req.body[key]);
+  values.push(req.params.id);
+
+  try {
+    const result = await pool.query(
+      `UPDATE public.users SET ${setClause} WHERE id = $${values.length} RETURNING ${PUBLIC_FIELDS}`,
+      values,
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'Email уже занят' });
+    }
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/users/:id', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `DELETE FROM public.users WHERE id = $1 RETURNING ${PUBLIC_FIELDS}`,
+      [req.params.id],
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Пользователь не найден' });
+    }
+
+    res.json({ message: 'Удалено', user: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Регистрация и вход
+// ---------------------------------------------------------------------------
 app.post('/register', async (req, res) => {
   const { first_name, last_name, email, password } = req.body;
 
@@ -83,7 +226,7 @@ app.post('/register', async (req, res) => {
     return res.status(400).json({ error: 'Все поля обязательны' });
   }
 
-  if (!email.includes('@')) {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return res.status(400).json({ error: 'Некорректный email' });
   }
 
@@ -93,27 +236,31 @@ app.post('/register', async (req, res) => {
 
   try {
     const existing = await pool.query(
-      'SELECT id FROM public.users WHERE email = $1',
-      [email]
+      'SELECT id FROM public.users WHERE lower(email) = lower($1)',
+      [email.trim()],
     );
 
     if (existing.rowCount > 0) {
       return res.status(409).json({ error: 'Email уже зарегистрирован' });
     }
 
-    const password_hash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 10);
 
     const result = await pool.query(
-      'INSERT INTO public.users (first_name, last_name, email, password_hash) VALUES ($1, $2, $3, $4) RETURNING id, first_name, last_name, email, created_at',
-      [first_name, last_name, email, password_hash]
+      `INSERT INTO public.users (first_name, last_name, email, password_hash)
+       VALUES ($1, $2, $3, $4)
+       RETURNING ${PUBLIC_FIELDS}`,
+      [first_name.trim(), last_name.trim(), email.trim(), passwordHash],
     );
 
     res.status(201).json(result.rows[0]);
   } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'Email уже зарегистрирован' });
+    }
     res.status(500).json({ error: err.message });
   }
 });
-
 
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
@@ -124,15 +271,22 @@ app.post('/login', async (req, res) => {
 
   try {
     const result = await pool.query(
-      'SELECT id, email, password_hash FROM public.users WHERE email = $1',
-      [email]
+      'SELECT id, email, password_hash FROM public.users WHERE lower(email) = lower($1)',
+      [email.trim()],
     );
 
+    // Одинаковый ответ для «нет такого пользователя» и «неверный пароль» —
+    // чтобы нельзя было перебором узнать, какие email зарегистрированы
     if (result.rowCount === 0) {
       return res.status(401).json({ error: 'Неверный email или пароль' });
     }
 
     const user = result.rows[0];
+
+    if (!user.password_hash) {
+      return res.status(401).json({ error: 'Неверный email или пароль' });
+    }
+
     const passwordMatch = await bcrypt.compare(password, user.password_hash);
 
     if (!passwordMatch) {
@@ -142,7 +296,7 @@ app.post('/login', async (req, res) => {
     const token = jwt.sign(
       { id: user.id, email: user.email },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '7d' },
     );
 
     res.json({ token });
@@ -151,72 +305,16 @@ app.post('/login', async (req, res) => {
   }
 });
 
-
-
-app.put("/users/:id", (req, res) => {
-  const { id } = req.params;
-  const { first_name, last_name, email } = req.body;
-
-  pool
-    .query(
-      "UPDATE public.users1 SET first_name = $1, last_name = $2, email = $3 WHERE id = $4 RETURNING *",
-      [first_name, last_name, email, id],
-    )
-    .then((result) => {
-      if (result.rowCount === 0) {
-        return res.status(404).json({ error: "Пользователь не найден" });
-      }
-      res.json(result.rows[0]);
-    })
-    .catch((err) => {
-      res.status(500).json({ error: err.message });
-    });
-});
-
-app.delete("/users/:id", (req, res) => {
-  const { id } = req.params;
-
-  pool
-    .query("DELETE FROM public.users1 WHERE id = $1 RETURNING *", [id])
-    .then((result) => {
-      if (result.rowCount === 0) {
-        return res.status(404).json({ error: "Пользователь не найден" });
-      }
-      res.json({ message: "Удалено", user: result.rows[0] });
-    })
-    .catch((err) => {
-      res.status(500).json({ error: err.message });
-    });
-});
-
-app.patch("/users/:id", (req, res) => {
-  const { id } = req.params;
-  const fields = req.body;
-
-  const allowed = ["first_name", "last_name", "email"];
-  const keys = Object.keys(fields).filter((k) => allowed.includes(k));
-
-  if (keys.length === 0) {
-    return res.status(400).json({ error: "Нет полей для обновления" });
+// ---------------------------------------------------------------------------
+// Обработчик ошибок (в т.ч. битый JSON в теле запроса)
+// ---------------------------------------------------------------------------
+app.use((err, req, res, next) => {
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'Некорректный JSON в теле запроса' });
   }
 
-  const setClause = keys.map((key, i) => `${key} = $${i + 1}`).join(", ");
-  const values = keys.map((key) => fields[key]);
-  values.push(id);
-
-  const sql = `UPDATE public.users1 SET ${setClause} WHERE id = $${values.length} RETURNING *`;
-
-  pool
-    .query(sql, values)
-    .then((result) => {
-      if (result.rowCount === 0) {
-        return res.status(404).json({ error: "Пользователь не найден" });
-      }
-      res.json(result.rows[0]);
-    })
-    .catch((err) => {
-      res.status(500).json({ error: err.message });
-    });
+  console.error(err);
+  res.status(500).json({ error: 'Внутренняя ошибка сервера' });
 });
 
 app.listen(PORT, () => {

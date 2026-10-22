@@ -5,13 +5,39 @@ if (!localStorage.getItem('token')) {
 let searchTimeout = null;
 let editingId = null;
 
+// Единая точка выхода в API: подставляет токен и разлогинивает при 401
+async function apiFetch(url, options = {}) {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${localStorage.getItem('token')}`,
+      ...(options.headers || {}),
+    },
+  });
+
+  if (response.status === 401) {
+    localStorage.removeItem('token');
+    window.location.href = '/login.html';
+    throw new Error('Требуется авторизация');
+  }
+
+  return response;
+}
+
 async function loadUsers(search = '') {
   let url = '/users';
   if (search) {
     url += `?search=${encodeURIComponent(search)}`;
   }
 
-  const response = await fetch(url);
+  const response = await apiFetch(url);
+
+  if (!response.ok) {
+    showToast('Не удалось загрузить список', 'error');
+    return;
+  }
+
   const users = await response.json();
 
   const tbody = document.querySelector('#users-table tbody');
@@ -58,7 +84,7 @@ async function startEdit(id) {
 
   editingId = id;
 
-  const response = await fetch(`/users/${id}`);
+  const response = await apiFetch(`/users/${id}`);
   const user = await response.json();
 
   const tr = document.querySelector(`#row-${id}`);
@@ -75,11 +101,16 @@ async function saveEdit(id) {
     return;
   }
 
-  await fetch(`/users/${id}`, {
+  const response = await apiFetch(`/users/${id}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ first_name, last_name, email })
   });
+
+  if (!response.ok) {
+    const error = await response.json();
+    showToast(error.error || 'Не удалось сохранить', 'error');
+    return;
+  }
 
   editingId = null;
   loadUsers(document.querySelector('#search-input').value);
@@ -88,7 +119,7 @@ async function saveEdit(id) {
 async function cancelEdit(id) {
   editingId = null;
 
-  const response = await fetch(`/users/${id}`);
+  const response = await apiFetch(`/users/${id}`);
   const user = await response.json();
 
   const tr = document.querySelector(`#row-${id}`);
@@ -98,7 +129,13 @@ async function cancelEdit(id) {
 async function deleteUser(id) {
   if (!confirm('Удалить пользователя?')) return;
 
-  await fetch(`/users/${id}`, { method: 'DELETE' });
+  const response = await apiFetch(`/users/${id}`, { method: 'DELETE' });
+
+  if (!response.ok) {
+    showToast('Не удалось удалить', 'error');
+    return;
+  }
+
   loadUsers(document.querySelector('#search-input').value);
 }
 
@@ -112,11 +149,16 @@ async function addUser() {
     return;
   }
 
-  await fetch('/users', {
+  const response = await apiFetch('/users', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ first_name, last_name, email })
   });
+
+  if (!response.ok) {
+    const error = await response.json();
+    showToast(error.error || 'Не удалось добавить', 'error');
+    return;
+  }
 
   document.querySelector('#first_name').value = '';
   document.querySelector('#last_name').value = '';
